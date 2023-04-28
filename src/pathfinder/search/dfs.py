@@ -11,17 +11,36 @@ class DepthFirstSearch:
 
         Args:
             grid (Grid): Grid of points
-            
+
         Returns:
             Solution: Solution found
         """
-        # Initialize a node with the initial position
-        node = Node("", grid.start, 0)
+        node = Node("", grid.start, cost=0)
 
         # Initialize the explored dictionary to be empty
-        explored = {} 
-        
-        # Add the node to the explored dictionary
-        explored[node.state] = True
-        
+        explored = {}
+
+        # Initialize the frontier with the initial node
+        frontier = StackFrontier()
+        frontier.add(node)
+
+        while not frontier.is_empty():
+            # Remove a node from the frontier
+            node = frontier.remove()
+
+            # Mark the node as explored
+            explored[node.state] = True
+
+            # Return if the node contains a goal state
+            if node.state == grid.end:
+                return Solution(node, explored)
+
+            # BFS
+            neighbours = grid.get_neighbours(node.state)
+            for action, postion in neighbours.items():
+                if postion not in explored:
+                    new_node = Node(
+                        "", postion, node.cost + grid.get_cost(postion), parent=node, action=action)
+                    frontier.add(new_node)
+
         return NoSolution(explored)
