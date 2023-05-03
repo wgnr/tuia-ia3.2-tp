@@ -18,8 +18,11 @@ class BreadthFirstSearch:
         # Initialize a node with the initial position
         node = Node("", grid.start, cost=0)
 
-        # Initialize the explored dictionary to be empty
-        explored = {}
+        # Initialize the explored dictionary
+        explored = {node.state: True}
+
+        if node.state == grid.end:
+            return Solution(node, explored)
 
         # Initialize the frontier with the initial node
         frontier = QueueFrontier()
@@ -29,23 +32,20 @@ class BreadthFirstSearch:
             # Remove a node from the frontier
             node = frontier.remove()
 
-            # Return if the node contains a goal state
-            if node.state == grid.end:
-                return Solution(node, explored)
+            neighbours = grid.get_neighbours(node.state)
+            for action, postion in neighbours.items():
+                child_node = Node(
+                    value="",
+                    state=postion,
+                    cost=node.cost + grid.get_cost(postion),
+                    parent=node,
+                    action=action)
 
-            if node.state not in explored:
-                # Mark the node as explored
-                explored[node.state] = True
+                if child_node.state == grid.end:
+                    return Solution(child_node, explored)
 
-                neighbours = grid.get_neighbours(node.state)
-                for action, postion in neighbours.items():
-                    if postion not in explored:
-                        child_node = Node(
-                            value="",
-                            state=postion,
-                            cost=node.cost + grid.get_cost(postion),
-                            parent=node,
-                            action=action)
-                        frontier.add(child_node)
+                if child_node.state not in explored:
+                    explored[child_node.state] = True
+                    frontier.add(child_node)
 
         return NoSolution(explored)
