@@ -18,8 +18,8 @@ class UniformCostSearch:
         # Initialize a node with the initial position
         node = Node(value="root", state=grid.start, cost=0)
 
-        # Initialize the explored dictionary to be empty
-        explored: dict[tuple[int, int], Node] = {}
+        # Initialize the explored dictionary
+        explored = {node.state: node}
 
         frontier = PriorityQueueFrontier()
         frontier.add(node, node.cost)
