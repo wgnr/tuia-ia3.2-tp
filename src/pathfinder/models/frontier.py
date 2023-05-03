@@ -88,7 +88,7 @@ class PriorityQueueFrontier(Frontier):
         """
         heappush(self.frontier, (priority, node))
 
-    def get(self, state: tuple[int, int]) -> Node | None:
+    def get(self, state: tuple[int, int]) -> tuple[int, Node] | None:
         """Get node by state. Create new if not found
 
         Args:
