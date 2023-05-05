@@ -5,21 +5,13 @@ from ..models.node import Node
 from typing import Callable
 
 
-def my_heuristic(node: Node) -> int:
-    # favorecemos los movimientos que van hacia abajo a la derecha
-    ranking = {
-        "up": 4,
-        "down": 2,
-        "left": 3,
-        "right": 1,
-        None: 100
-    }
-    return ranking[node.action]
+def manhattan_distance(node: Node, goal: tuple[int, int]) -> int:
+    return sum(abs(a-b) for a, b in zip(node.state, goal))
 
 
 class GreedyBestFirstSearch:
     @staticmethod
-    def search(grid: Grid, h: Callable[[Node], int] = my_heuristic) -> Solution:
+    def search(grid: Grid, h: Callable[[Node, tuple[int, int]], int] = manhattan_distance) -> Solution:
         """Find path between two points in a grid using Greedy Best First Search
 
         Args:
@@ -35,7 +27,7 @@ class GreedyBestFirstSearch:
         explored = {node.state: node}
 
         frontier = PriorityQueueFrontier()
-        frontier.add(node, h(node))
+        frontier.add(node, h(node, grid.end))
 
         while not frontier.is_empty():
             node = frontier.pop()
@@ -56,6 +48,6 @@ class GreedyBestFirstSearch:
                         parent=node,
                         action=action)
                     explored[child_node.state] = child_node
-                    frontier.add(child_node, h(child_node))
+                    frontier.add(child_node, h(child_node, grid.end))
 
         return NoSolution(explored)
