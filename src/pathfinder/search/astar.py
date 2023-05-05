@@ -5,21 +5,13 @@ from ..models.node import Node
 from typing import Callable
 
 
-def my_heuristic(node: Node) -> int:
-    # favorecemos los movimientos que van hacia abajo a la derecha
-    ranking = {
-        "up": 4,
-        "down": 2,
-        "left": 3,
-        "right": 1,
-        None: 100
-    }
-    return ranking[node.action]
+def manhattan_distance(node: Node, goal: tuple[int, int]) -> int:
+    return sum(abs(a-b) for a, b in zip(node.state, goal))
 
 
 class AStarSearch:
     @staticmethod
-    def search(grid: Grid, h: Callable[[Node], int] = my_heuristic) -> Solution:
+    def search(grid: Grid, h: Callable[[Node, tuple[int, int]], int] = manhattan_distance) -> Solution:
         """Find path between two points in a grid using A* Search
 
         Args:
@@ -35,7 +27,7 @@ class AStarSearch:
         explored = {node.state: node}
 
         frontier = PriorityQueueFrontier()
-        a_star_cost = node.cost + h(node)
+        a_star_cost = node.cost + h(node, grid.end)
         frontier.add(node, a_star_cost)
 
         while not frontier.is_empty():
@@ -57,7 +49,7 @@ class AStarSearch:
                         parent=node,
                         action=action)
                     explored[child_node.state] = child_node
-                    a_star_cost = child_node.cost + h(child_node)
+                    a_star_cost = child_node.cost + h(child_node, grid.end)
                     frontier.add(child_node, a_star_cost)
 
         return NoSolution(explored)
