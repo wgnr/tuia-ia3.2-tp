@@ -1,12 +1,13 @@
 from .node import Node
 
+
 class Solution:
     """Model a solution to a pathfinding problem"""
 
     def __init__(
         self,
         node: Node,
-        explored: dict[tuple[int, int]],
+        explored: dict[tuple[int, int], Node] | dict[tuple[int, int], bool],
         time: float = 0
     ) -> None:
 
@@ -36,7 +37,7 @@ class NoSolution(Solution):
 
     def __init__(
         self,
-        explored: dict[tuple[int, int]],
+        explored: dict[tuple[int, int], Node] | dict[tuple[int, int], bool],
         time: float = 0
     ) -> None:
         self.path = []
