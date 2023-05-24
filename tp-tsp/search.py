@@ -17,7 +17,7 @@ No viene implementado, se debe completar.
 
 
 from __future__ import annotations
-from problem import OptProblem
+from problem import OptProblem, TSP
 from node import Node
 from random import choice
 from time import time
@@ -93,7 +93,21 @@ class HillClimbing(LocalSearch):
 class HillClimbingReset(LocalSearch):
     """Algoritmo de ascension de colinas con reinicio aleatorio."""
 
-    # COMPLETAR
+    def solve(self, problem: TSP):
+        start = time()
+        attempts = 10
+        best_value = float("-inf")
+
+        for _ in range(attempts):
+            problem.random_reset()
+            solution = HillClimbing()
+            solution.solve(problem)
+            self.niters += solution.niters
+            if best_value < solution.value:
+                best_value = solution.value
+                self.tour = solution.tour
+                self.value = solution.value
+                self.time = time()-start
 
 
 class Tabu(LocalSearch):
