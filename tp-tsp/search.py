@@ -18,7 +18,7 @@ No viene implementado, se debe completar.
 
 from __future__ import annotations
 from problem import OptProblem, TSP
-from node import Node
+from node import Node, Action
 from random import choice
 from time import time
 
@@ -33,7 +33,7 @@ class LocalSearch:
         self.tour = []  # Solucion, inicialmente vacia
         self.value = None  # Valor objetivo de la solucion
 
-    def solve(self, problem: OptProblem):
+    def solve(self, problem: TSP):
         """Resuelve un problema de optimizacion."""
         self.tour = problem.init
         self.value = problem.obj_val(problem.init)
@@ -46,7 +46,7 @@ class HillClimbing(LocalSearch):
     El criterio de parada es alcanzar un optimo local.
     """
 
-    def solve(self, problem: OptProblem):
+    def solve(self, problem: TSP):
         """Resuelve un problema de optimizacion con ascension de colinas.
 
         Argumentos:
@@ -99,9 +99,9 @@ class HillClimbingReset(LocalSearch):
         best_value = float("-inf")
 
         for _ in range(attempts):
-            problem.random_reset()
             solution = HillClimbing()
             solution.solve(problem)
+            problem.random_reset()
             self.niters += solution.niters
             if best_value < solution.value:
                 best_value = solution.value
@@ -113,4 +113,36 @@ class HillClimbingReset(LocalSearch):
 class Tabu(LocalSearch):
     """Algoritmo de busqueda tabu."""
 
-    # COMPLETAR
+    def solve(self, problem: TSP):
+        start = time()
+
+        # Crear el nodo inicial
+        actual = Node(problem.init, problem.obj_val(problem.init))
+        best = actual
+        tabu: set[Action] = set()
+        no_improvements_counter = 0
+
+        while no_improvements_counter < 10 and self.niters < 1000:
+            self.niters += 1
+            diff = problem.val_diff(actual.state)
+            max_acts_val = [
+                (act, val) for act, val in diff.items()
+                if val == max(diff.values()) and act not in tabu]
+            act, val = choice(max_acts_val)
+            neightbour = Node(problem.result(actual.state, act),
+                              actual.value + val)
+
+            if (best.value - neightbour.value)/best.value < 1e-4:
+                no_improvements_counter += 1
+
+            if best.value < neightbour.value:
+                best = neightbour
+
+            # insertamos la accion contraria
+            tabu.add(act[::-1])
+            actual = neightbour
+
+        self.tour = best.state
+        self.value = best.value
+        end = time()
+        self.time = end-start
