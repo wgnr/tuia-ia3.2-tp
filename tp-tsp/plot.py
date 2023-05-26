@@ -26,7 +26,7 @@ def show(G: nx.Graph,
         diccionario con el tour y su costo para cada algoritmo de busqueda
     """
     # Crear los subplots
-    fig, axs = plt.subplots(nrows=1, ncols=len(sols))
+    fig, axs = plt.subplots(nrows=1, ncols=len(sols), figsize=(8,5))
 
     # Determinar colores
     colors = plt.rcParams["axes.prop_cycle"]()
