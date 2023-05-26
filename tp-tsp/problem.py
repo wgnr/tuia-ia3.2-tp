@@ -37,12 +37,9 @@ Formulacion de estado completo para el Problema del Viajante:
 """
 
 from __future__ import annotations
-from typing import TypeVar
 from networkx import Graph
 from random import shuffle
-
-State = TypeVar('State')
-Action = TypeVar('Action')
+from node import State, Action
 
 
 class OptProblem:
@@ -93,7 +90,7 @@ class TSP(OptProblem):
         self.init = [i for i in range(0, G.number_of_nodes())]
         self.init.append(0)
 
-    def actions(self, state: list[int]) -> list[tuple[int, int]]:
+    def actions(self, state: State) -> list[Action]:
         """Determina la lista de acciones que se pueden aplicar a un estado.
 
         Argumentos:
@@ -153,7 +150,7 @@ class TSP(OptProblem):
             value -= self.G.get_edge_data(u, v)['weight']
         return value
 
-    def val_diff(self, state: list[int]) -> dict[tuple[int, int], float]:
+    def val_diff(self, state: State) -> dict[Action, float]:
         """Determina la diferencia de valor objetivo al aplicar cada accion.
 
         Para cada accion A de self.actions(state), determina la diferencia
