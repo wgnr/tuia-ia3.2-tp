@@ -125,11 +125,11 @@ class Tabu(LocalSearch):
 
         while True:
             if no_improvements_counter > len(problem.init)//3:
-                print("SALE POR FALTA DE MEJORAS")
+                # print("SALE POR FALTA DE MEJORAS")
                 break
 
             if self.niters > len(problem.init)*5:
-                print("SALE POR EXCESO DE ITERACIONES")
+                # print("SALE POR EXCESO DE ITERACIONES")
                 break
 
             self.niters += 1
@@ -141,7 +141,7 @@ class Tabu(LocalSearch):
                              and act not in tabu]
 
             if not bests_act_val:
-                print("SALE POR NO HABER MAS ACCIONES")
+                # print("SALE POR NO HABER MAS ACCIONES")
                 break
 
             act, val = choice(bests_act_val)
@@ -162,3 +162,22 @@ class Tabu(LocalSearch):
         self.value = best.value
         end = time()
         self.time = end-start
+
+class TabuReset(LocalSearch):
+    """Algoritmo Tabu con reinicio aleatorio."""
+
+    def solve(self, problem: TSP):
+        start = time()
+        attempts = 10
+        best_value = float("-inf")
+
+        for _ in range(attempts):
+            solution = Tabu()
+            solution.solve(problem)
+            problem.random_reset()
+            self.niters += solution.niters
+            if best_value < solution.value:
+                best_value = solution.value
+                self.tour = solution.tour
+                self.value = solution.value
+                self.time = time()-start
