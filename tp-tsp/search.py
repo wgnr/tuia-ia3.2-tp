@@ -21,6 +21,7 @@ from problem import OptProblem, TSP
 from node import Node, Action
 from random import choice
 from time import time
+from collections import deque
 
 
 class LocalSearch:
@@ -119,18 +120,33 @@ class Tabu(LocalSearch):
         # Crear el nodo inicial
         actual = Node(problem.init, problem.obj_val(problem.init))
         best = actual
-        tabu: set[Action] = set()
+        tabu = deque(maxlen=len(problem.init)//5)
         no_improvements_counter = 0
 
-        while no_improvements_counter < 10 and self.niters < 1000:
+        while True:
+            if no_improvements_counter > len(problem.init)//3:
+                print("SALE POR FALTA DE MEJORAS")
+                break
+
+            if self.niters > len(problem.init)*5:
+                print("SALE POR EXCESO DE ITERACIONES")
+                break
+
             self.niters += 1
             diff = problem.val_diff(actual.state)
-            max_acts_val = [
-                (act, val) for act, val in diff.items()
-                if val == max(diff.values()) and act not in tabu]
-            act, val = choice(max_acts_val)
-            neightbour = Node(problem.result(actual.state, act),
-                              actual.value + val)
+
+            max_val = max(diff.values())
+            bests_act_val = [(act, val) for act, val in diff.items()
+                             if abs(max_val - val)/abs(max_val) < 0.05
+                             and act not in tabu]
+
+            if not bests_act_val:
+                print("SALE POR NO HABER MAS ACCIONES")
+                break
+
+            act, val = choice(bests_act_val)
+            neightbour = Node(problem.result(
+                actual.state, act), actual.value + val)
 
             if (best.value - neightbour.value)/best.value < 1e-4:
                 no_improvements_counter += 1
@@ -139,7 +155,7 @@ class Tabu(LocalSearch):
                 best = neightbour
 
             # insertamos la accion contraria
-            tabu.add(act[::-1])
+            tabu.append(act[::-1])
             actual = neightbour
 
         self.tour = best.state
