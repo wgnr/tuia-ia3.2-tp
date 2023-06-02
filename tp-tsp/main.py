@@ -31,7 +31,8 @@ def main() -> None:
     # Construir la instancia de TSP
     p = problem.TSP(G)
     p.random_reset()
-    intial_state = p.init
+    # queremos repetir el mismo estado inicial para todos los algoritmos.
+    intial_state = list(p.init)
 
     # Construir las instancias de los algoritmos
     algos = {
@@ -44,7 +45,9 @@ def main() -> None:
     # Resolver el TSP con cada algoritmo
     for algo in algos.values():
         print("Starting", algo.__class__.__name__)
-        p.init = intial_state
+        # asignamos una copia del estado inicial para evitar que el 
+        # `.random_reset()` de los algoritmos con reset, muten mi estado inicial.
+        p.init = list(intial_state)
         algo.solve(p)
 
     # Mostrar resultados por linea de comandos
