@@ -3,11 +3,8 @@
 Node representa un nodo para una busqueda local, es decir,
 almacena un estado su un valor objetivo.
 """
-from typing import TypeVar
-
-State = TypeVar('State')
-Action = TypeVar('Action')
-
+State = list[int]
+Action = tuple[int, int]
 
 class Node:
     """Clase que representa un nodo para busqueda local."""

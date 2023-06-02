@@ -26,7 +26,7 @@ def show(G: nx.Graph,
         diccionario con el tour y su costo para cada algoritmo de busqueda
     """
     # Crear los subplots
-    fig, axs = plt.subplots(nrows=1, ncols=len(sols))
+    fig, axs = plt.subplots(nrows=1, ncols=len(sols), figsize=(10, 5))
 
     # Determinar colores
     colors = plt.rcParams["axes.prop_cycle"]()
@@ -44,10 +44,9 @@ def show(G: nx.Graph,
         tour = [i+1 for i in tour]
         edges = list(zip(tour, tour[1:]))
         nx.draw_networkx_edges(G, pos=coords, edgelist=edges,
-                               ax=axs[i], label="{}: {}".format(algo, val),
-                               edge_color=next(colors)["color"])
+                               ax=axs[i], edge_color=next(colors)["color"])
 
-        axs[i].legend()
+        axs[i].set_title("{}: {}".format(algo, val))
 
     # Mostrar la grafica
     fig.suptitle(name, fontsize=15)
