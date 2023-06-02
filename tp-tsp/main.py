@@ -65,10 +65,11 @@ def main() -> None:
         df.to_pickle("hill.pkl")
 
     elif metodo in ["mismo", "reverso", "ambos"]:
+        prob_len=len(init_list[0][1])
         iterar_sobre = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                            len(p.init)//2, len(p.init)//3, len(p.init)//4,
-                            len(p.init)//5, len(p.init)//6, len(p.init)//7,
-                            len(p.init)//8, len(p.init)//9, len(p.init)//10])
+                            prob_len//2, prob_len//3, prob_len//4,
+                            prob_len//5, prob_len//6, prob_len//7,
+                            prob_len//8, prob_len//9, prob_len//10])
 
         print(iterar_sobre)
         veces=10
