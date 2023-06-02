@@ -10,14 +10,17 @@ import load
 import search
 import plot
 import problem
+from search import LocalSearch
+import pandas as pd
+import numpy as np
 
 # Algoritmos involucrados
 HILL_CLIMBING = "hill"
 HILL_CLIMBING_RANDOM_RESET = "hill_r"
 TABU_SEARCH = "tabu"
 TABU_RESET = "tabu_r"
-ALGO_NAMES = [HILL_CLIMBING, HILL_CLIMBING_RANDOM_RESET, TABU_SEARCH, TABU_RESET]
-
+ALGO_NAMES = [HILL_CLIMBING,
+              HILL_CLIMBING_RANDOM_RESET, TABU_SEARCH, TABU_RESET]
 
 def main() -> None:
     """Funcion principal."""
@@ -28,41 +31,86 @@ def main() -> None:
     G, coords = load.read_tsp(args.filename)
     print(args.filename)
 
-    # Construir la instancia de TSP
-    p = problem.TSP(G)
-    p.random_reset()
-    # queremos repetir el mismo estado inicial para todos los algoritmos.
-    intial_state = list(p.init)
+    metodo = args.metodo  # hill, "mismo", "reverso", "ambos"
+    starts = pd.read_csv("inicio.csv", sep=";")
+    import json
+    init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
-    # Construir las instancias de los algoritmos
-    algos = {
-        HILL_CLIMBING: search.HillClimbing(),
-        HILL_CLIMBING_RANDOM_RESET: search.HillClimbingReset(),
-        TABU_SEARCH: search.Tabu(),
-        TABU_RESET: search.TabuReset(),
-    }
+    if metodo == "hill":
+        df = pd.DataFrame()
+        for problem_n, init in init_list:
+            p = problem.TSP(G)
+            p.init = list(init)
+            algo = search.HillClimbing()
+            algo.solve(p)
+            df = pd.concat([
+                df,
+                pd.DataFrame.from_dict({
+                    "name": [algo.__class__.__name__],
+                    "value": [algo.value],
+                    "niters": [algo.niters],
+                    "time": [algo.time],
+                    "problem_n": [problem_n],
+                    "tabu_iter":[np.nan],
+                    "tabu_max_len":[np.nan],
+                    "tabu_prob":[np.nan],
+                    "tabu_improv_treshold":[np.nan],
+                    "tabu_lista":[np.nan],
+                    "tabu_salida":[np.nan],
+                    "tabu_accion":[np.nan],
+                    "inicio": [p.init],
+                    "solution": [algo.tour],
+                })])
+        df.reset_index(drop=True, inplace=True)
+        df.to_pickle("hill.pkl")
 
-    # Resolver el TSP con cada algoritmo
-    for algo in algos.values():
-        print("Starting", algo.__class__.__name__)
-        # asignamos una copia del estado inicial para evitar que el 
-        # `.random_reset()` de los algoritmos con reset, muten mi estado inicial.
-        p.init = list(intial_state)
-        algo.solve(p)
+    elif metodo in ["mismo", "reverso", "ambos"]:
+        iterar_sobre = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+                            len(p.init)//2, len(p.init)//3, len(p.init)//4,
+                            len(p.init)//5, len(p.init)//6, len(p.init)//7,
+                            len(p.init)//8, len(p.init)//9, len(p.init)//10])
 
-    # Mostrar resultados por linea de comandos
-    print("Valor:", "Tiempo:", "Iters:", "Algoritmo:", sep="\t\t")
-    for name, algo in algos.items():
-        print(algo.value, "%.2f" % algo.time, algo.niters, name, sep="\t\t")
+        print(iterar_sobre)
+        veces=10
+        df = pd.DataFrame()
 
-    # Graficar los tours
-    tours = {}
-    tours['init'] = (intial_state, p.obj_val(intial_state))  # estado inicial
-
-    for name, algo in algos.items():
-        tours[name] = (algo.tour, algo.value)
-    plot.show(G, coords, args.filename, tours)
+        for max_len in iterar_sobre:
+            for prob in [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
+                for improv_treshold in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
+                    print(max_len, prob, improv_treshold)
+                    # print("Valor:", "Tiempo:", "Iters:", "Algoritmo:", sep="\t\t")
+                    # Resolver el TSP con cada algoritmo
+                    for problem_n, init in init_list:
+                        for i, algo in enumerate([search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)]*veces):
+                            p = problem.TSP(G)
+                            p.init = list(init)
+                            algo.solve(p)
+                            df = pd.concat([df,
+                                            pd.DataFrame.from_dict({
+                                                "name": [algo.__class__.__name__],
+                                                "value": [algo.value],
+                                                "niters": [algo.niters],
+                                                "time": [algo.time],
+                                                "problem_n": [problem_n],
+                                                "tabu_iter": [i],
+                                                "tabu_max_len":  [algo.max_len],
+                                                "tabu_prob": [algo.prob],
+                                                "tabu_improv_treshold": [algo.improv_treshold],
+                                                "tabu_lista": [algo.use],
+                                                "tabu_salida": [algo.reason],
+                                                "tabu_accion": [metodo],
+                                                "inicio": [p.init],
+                                                "solution": [algo.tour],
+                                            })])
+        df.reset_index(drop=True, inplace=True)
+        df.to_pickle(f"{metodo}.pkl")
 
 
 if __name__ == "__main__":
     main()
+    # import winsound
+    # winsound.Beep(550, 1000)
+    # winsound.Beep(330, 1000)
+    # winsound.Beep(440, 2000)
+    # winsound.Beep(550, 1000)
+    # winsound.Beep(330, 1000)

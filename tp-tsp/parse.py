@@ -19,5 +19,9 @@ def parse() -> ArgumentParser:
     parser.add_argument('filename',
                         metavar='filename.tsp',
                         help='path to input file')
+    
+    parser.add_argument('metodo',
+                        metavar='hill, "mismo", "reverso", "ambos"',
+                        help='path to input file')
 
     return parser.parse_args()

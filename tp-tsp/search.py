@@ -113,28 +113,31 @@ class HillClimbingReset(LocalSearch):
 class Tabu(LocalSearch):
     """Algoritmo de busqueda tabu."""
 
+    def __init__(self, max_len=2, prob=0.05, improv_treshold=1e-4, use:str="mismo") -> None:
+        super().__init__()
+        self.max_len = max_len
+        self.prob = prob
+        self.improv_treshold=improv_treshold
+        self.reason= None
+        self.use = use
+
     def solve(self, problem: TSP):
         start = time()
 
         actual = Node(problem.init, problem.obj_val(problem.init))
         best = actual
-        # Creamos una lista tabu que solo pueda guardar una cantidad limite de acciones, de modo tal,
-        # de no privar al metodo de explorar acciones pasadas que puedan ser convinientes en
-        # estados mas recientes.
-        # este valor es arbitrario y empirico de correrlo sobre varios recorridos.
-        tabu = deque(maxlen=len(problem.init)//5)
-        # contador para terminar el algoritmo en caso de que no se haya encontrado mejoras, 
-        # un numero determinado de veces
+        tabu = deque(maxlen=self.max_len)
         no_improvements_counter = 0
 
         while True:
-            # criterio de parada arbitrario modulado por el numero de puntos
-            if no_improvements_counter > len(problem.init)//3:
+            if no_improvements_counter > len(problem.init)*2:
+                self.reason="FALTA DE MEJORAS"
                 break
 
             # No puede quedarse iterando indefinidamente, por lo que se le agrega
             # otra parada.
             if self.niters > len(problem.init)*5:
+                self.reason="EXCESO DE ITERACIONES"
                 break
 
             self.niters += 1
@@ -151,28 +154,36 @@ class Tabu(LocalSearch):
             # espacio de estados potencial a explorar, permitiendo recorrer más
             # caminos subóptimos (simil, Gradiente Estocástico)
             bests_act_val = [(act, val) for act, val in diff.items()
-                             if abs(max_val - val) <= 0.05*abs(max_val)]
+                             if abs(max_val - val) <= self.prob*abs(max_val)]
 
             # de no haber acciones disponibles, sale.
             # generalmente ocacionado por la cantidad de restricciones en la lista tabu.
             if not bests_act_val:
+                self.reason="AGOTAMIENTO DE ACCIONES"
                 break
 
             # elegimos una acción al azar
             act, val = choice(bests_act_val)
             neightbour = Node(problem.result(actual.state, act), actual.value + val)
 
-            # si, nuestro estado vecino, no mejora en 0.01% nuestro score, 
-            # se considera que no aportó mejora significativa.
-            if (best.value - neightbour.value)/best.value < 1e-4:
+            if (best.value - neightbour.value)/best.value < self.improv_treshold:
                 no_improvements_counter += 1
 
             # si el score del estado es mejor, reemplazamos el mejor por el vecino.
             if best.value < neightbour.value:
                 best = neightbour
 
-            # insertamos la acción en la lista tabú para evitar caminos ciclicos/redundantes
-            tabu.append(act)
+            # insertamos la accion contraria
+            if self.use == "mismo":
+                tabu.append(act)
+            elif self.use == "reverso":
+                tabu.append(act[::-1])
+            elif self.use == "ambos":
+                tabu.append(act)
+                tabu.append(act[::-1])
+            else:
+                raise ValueError("use debe ser 'mismo', 'reverso' o 'ambos'")
+
             actual = neightbour
 
         self.tour = best.state
