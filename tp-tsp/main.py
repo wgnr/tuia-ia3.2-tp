@@ -36,6 +36,11 @@ def main() -> None:
     import json
     init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
+    # p=problem.TSP(G)
+    # r=[p.random_reset() or list(p.init) for _ in enumerate(range(25))]
+    # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv("inicio.csv", index=False, sep=";")
+
+
     if metodo == "hill":
         df = pd.DataFrame()
         for problem_n, init in init_list:
@@ -64,9 +69,11 @@ def main() -> None:
         df.reset_index(drop=True, inplace=True)
         df.to_pickle("hill.pkl")
 
-    elif metodo in ["mismo", "reverso", "ambos"]:
-        prob_len=len(init_list[0][1])
-        iterar_sobre = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    elif metodo in ["mismo", "reverso", "ambos", "estado"]:
+        iterar_sobre=[np.nan]
+        if metodo!="estado":
+            prob_len=len(init_list[0][1])
+            iterar_sobre = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                             prob_len//2, prob_len//3, prob_len//4,
                             prob_len//5, prob_len//6, prob_len//7,
                             prob_len//8, prob_len//9, prob_len//10])

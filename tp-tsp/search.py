@@ -113,15 +113,66 @@ class HillClimbingReset(LocalSearch):
 class Tabu(LocalSearch):
     """Algoritmo de busqueda tabu."""
 
-    def __init__(self, max_len=2, prob=0.05, improv_treshold=1e-4, use:str="mismo") -> None:
+    def __init__(self, use, max_len=2, prob=0.05, improv_treshold=1e-4) -> None:
         super().__init__()
         self.max_len = max_len
         self.prob = prob
         self.improv_treshold=improv_treshold
         self.reason= None
         self.use = use
-
+    
     def solve(self, problem: TSP):
+        if self.use=="estado":
+            self.solve_state_(problem)
+        else:
+            self.solve_act_(problem)
+
+    def solve_state_(self, problem: TSP):
+        start = time()
+
+        actual = Node(problem.init, problem.obj_val(problem.init))
+        best = actual
+        tabu = [actual.state]
+        no_improvements_counter = 0
+
+        while True:
+            if no_improvements_counter > len(problem.init)*2:
+                self.reason="FALTA DE MEJORAS"
+                break
+
+            if self.niters > len(problem.init)*5:
+                self.reason="EXCESO DE ITERACIONES"
+                break
+
+            self.niters += 1
+
+            diff={act: val for act, val in 
+                                problem.val_diff(actual.state).items()
+                    if problem.result(actual.state, act) not in tabu}
+            
+            max_val = max(diff.values())
+            bests_act_val = [(act, val) for act, val in diff.items()
+                             if abs(max_val - val) <= self.prob*abs(max_val)]
+            
+            if not bests_act_val:
+                self.reason="AGOTAMIENTO DE ACCIONES"
+                break
+
+            act, val = choice(bests_act_val)
+            neightbour = Node(problem.result(actual.state, act), actual.value + val)
+            tabu.append(neightbour.state)
+            if best.value < neightbour.value:
+                best = neightbour
+
+            actual = neightbour
+
+        self.tour = best.state
+        self.value = best.value
+        end = time()
+        self.time = end-start
+
+
+    def solve_act_(self, problem: TSP):
         start = time()
 
         actual = Node(problem.init, problem.obj_val(problem.init))
