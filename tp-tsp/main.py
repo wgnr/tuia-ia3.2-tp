@@ -4,7 +4,6 @@ Autor: Mauro Lucci.
 Fecha: 2023.
 Materia: Prog3 - TUIA
 """
-
 import parse
 import load
 import search
@@ -13,6 +12,7 @@ import problem
 from search import LocalSearch
 import pandas as pd
 import numpy as np
+import json
 
 # Algoritmos involucrados
 HILL_CLIMBING = "hill"
@@ -32,17 +32,18 @@ def main() -> None:
     print(args.filename)
 
     metodo = args.metodo  # hill, "mismo", "reverso", "ambos"
-    starts = pd.read_csv("inicio.csv", sep=";")
-    import json
-    init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
-    # p=problem.TSP(G)
-    # r=[p.random_reset() or list(p.init) for _ in enumerate(range(25))]
+    p=problem.TSP(G)
+    # cantidad_problemas=10
+    # r=[p.random_reset() or list(p.init) for _ in enumerate(range(cantidad_problemas))]
     # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv("inicio.csv", index=False, sep=";")
 
+    starts = pd.read_csv("inicio.csv", sep=";")
+    init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
+
+    df = pd.DataFrame()
     if metodo == "hill":
-        df = pd.DataFrame()
         p = problem.TSP(G)
         for problem_n, init in init_list:
             p.init = list(init)
@@ -65,29 +66,29 @@ def main() -> None:
                     "inicio": [p.init],
                     "solution": [algo.tour],
                 })])
-        df.reset_index(drop=True, inplace=True)
-        df.to_pickle("hill.pkl")
 
     elif metodo in ["mismo", "reverso", "ambos", "estado"]:
-        iterar_sobre=[np.nan]
+        max_len_list=[np.nan]
         if metodo!="estado":
             prob_len=len(init_list[0][1])
-            iterar_sobre = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            max_len_list = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
                             prob_len//2, prob_len//3, prob_len//4,
                             prob_len//5, prob_len//6, prob_len//7,
                             prob_len//8, prob_len//9, prob_len//10])
-
-        print(iterar_sobre)
+        
+        prob_list=[0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
+        improv_treshold_list=[1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
         veces=10
-        df = pd.DataFrame()
+        total=len(max_len_list)*len(prob_list)*len(improv_treshold_list)*len(init_list)*veces
+        print("Cantidad total de iteraciones", total)
+        contador=0
+
         p = problem.TSP(G)
 
-        for max_len in iterar_sobre:
-            for prob in [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
-                for improv_treshold in [1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
-                    print(max_len, prob, improv_treshold)
-                    # print("Valor:", "Tiempo:", "Iters:", "Algoritmo:", sep="\t\t")
-                    # Resolver el TSP con cada algoritmo
+        for max_len in max_len_list:
+            for prob in prob_list:
+                for improv_treshold in improv_treshold_list:
+                    print(f"Progreso: {contador}/{total} ({contador/total*100:.2f}%)")
                     for problem_n, init in init_list:
                         for i in range(veces):
                             algo = search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)
@@ -109,8 +110,10 @@ def main() -> None:
                                                 "inicio": [p.init],
                                                 "solution": [algo.tour],
                                             })])
-        df.reset_index(drop=True, inplace=True)
-        df.to_pickle(f"{metodo}.pkl")
+                        contador+=veces
+    
+    df.reset_index(drop=True, inplace=True)
+    df.to_pickle(f"{metodo}.pkl")
 
 
 if __name__ == "__main__":
