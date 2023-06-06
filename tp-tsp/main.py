@@ -43,8 +43,8 @@ def main() -> None:
 
     if metodo == "hill":
         df = pd.DataFrame()
+        p = problem.TSP(G)
         for problem_n, init in init_list:
-            p = problem.TSP(G)
             p.init = list(init)
             algo = search.HillClimbing()
             algo.solve(p)
@@ -62,7 +62,6 @@ def main() -> None:
                     "tabu_improv_treshold":[np.nan],
                     "tabu_lista":[np.nan],
                     "tabu_salida":[np.nan],
-                    "tabu_accion":[np.nan],
                     "inicio": [p.init],
                     "solution": [algo.tour],
                 })])
@@ -81,6 +80,7 @@ def main() -> None:
         print(iterar_sobre)
         veces=10
         df = pd.DataFrame()
+        p = problem.TSP(G)
 
         for max_len in iterar_sobre:
             for prob in [0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]:
@@ -89,8 +89,8 @@ def main() -> None:
                     # print("Valor:", "Tiempo:", "Iters:", "Algoritmo:", sep="\t\t")
                     # Resolver el TSP con cada algoritmo
                     for problem_n, init in init_list:
-                        for i, algo in enumerate([search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)]*veces):
-                            p = problem.TSP(G)
+                        for i in range(veces):
+                            algo = search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)
                             p.init = list(init)
                             algo.solve(p)
                             df = pd.concat([df,
@@ -106,7 +106,6 @@ def main() -> None:
                                                 "tabu_improv_treshold": [algo.improv_treshold],
                                                 "tabu_lista": [algo.use],
                                                 "tabu_salida": [algo.reason],
-                                                "tabu_accion": [metodo],
                                                 "inicio": [p.init],
                                                 "solution": [algo.tour],
                                             })])

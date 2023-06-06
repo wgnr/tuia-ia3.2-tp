@@ -136,11 +136,11 @@ class Tabu(LocalSearch):
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*2:
+            if no_improvements_counter > len(problem.init)*10:
                 self.reason="FALTA DE MEJORAS"
                 break
 
-            if self.niters > len(problem.init)*5:
+            if self.niters > len(problem.init)*30:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 
@@ -181,13 +181,13 @@ class Tabu(LocalSearch):
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*2:
+            if no_improvements_counter > len(problem.init)*10:
                 self.reason="FALTA DE MEJORAS"
                 break
 
             # No puede quedarse iterando indefinidamente, por lo que se le agrega
             # otra parada.
-            if self.niters > len(problem.init)*5:
+            if self.niters > len(problem.init)*30:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 
