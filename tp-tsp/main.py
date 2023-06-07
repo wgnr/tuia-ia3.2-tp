@@ -38,9 +38,15 @@ def main() -> None:
     # r=[p.random_reset() or list(p.init) for _ in enumerate(range(cantidad_problemas))]
     # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv("inicio.csv", index=False, sep=";")
 
-    starts = pd.read_csv("inicio.csv", sep=";")
-    init_list = [(n, json.loads(arr)) for n, arr in starts.values]
+    # starts = pd.read_csv("inicio.csv", sep=";")
+    # init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
+    with open(args.config, "r") as f:
+        conf_file = json.load(f)
+        init_list = conf_file["runs"]
+        prob_list = conf_file["prob_list"]
+        improv_treshold_list = conf_file["improv_treshold_list"]
+        times = conf_file["times"]
 
     df = pd.DataFrame()
     if metodo == "hill":
@@ -63,23 +69,19 @@ def main() -> None:
                     "tabu_improv_treshold":[np.nan],
                     "tabu_lista":[np.nan],
                     "tabu_salida":[np.nan],
-                    "inicio": [p.init],
                     "solution": [algo.tour],
                 })])
 
     elif metodo in ["mismo", "reverso", "ambos", "estado"]:
         max_len_list=[np.nan]
         if metodo!="estado":
-            prob_len=len(init_list[0][1])
-            max_len_list = set([1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-                            prob_len//2, prob_len//3, prob_len//4,
-                            prob_len//5, prob_len//6, prob_len//7,
-                            prob_len//8, prob_len//9, prob_len//10])
+            problem_len=len(init_list[0][1])
+            print(problem_len)
+            max_len_list = set(conf_file["len_list"]["fixed"]+
+                               [int(problem_len//n) for n in conf_file["len_list"]["proporcional_div"]])
+            print(max_len_list)
         
-        prob_list=[0, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-        improv_treshold_list=[1e-5, 1e-4, 1e-3, 1e-2, 1e-1]
-        veces=10
-        total=len(max_len_list)*len(prob_list)*len(improv_treshold_list)*len(init_list)*veces
+        total=len(max_len_list)*len(prob_list)*len(improv_treshold_list)*len(init_list)*times
         print("Cantidad total de iteraciones", total)
         contador=0
 
@@ -90,7 +92,7 @@ def main() -> None:
                 for improv_treshold in improv_treshold_list:
                     print(f"Progreso: {contador}/{total} ({contador/total*100:.2f}%)")
                     for problem_n, init in init_list:
-                        for i in range(veces):
+                        for i in range(times):
                             algo = search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)
                             p.init = list(init)
                             algo.solve(p)
@@ -107,13 +109,12 @@ def main() -> None:
                                                 "tabu_improv_treshold": [algo.improv_treshold],
                                                 "tabu_lista": [algo.use],
                                                 "tabu_salida": [algo.reason],
-                                                "inicio": [p.init],
                                                 "solution": [algo.tour],
                                             })])
-                        contador+=veces
+                        contador+=times
     
     df.reset_index(drop=True, inplace=True)
-    df.to_pickle(f"{metodo}.pkl")
+    df.to_pickle(f"{metodo}-{args.config}.pkl")
 
 
 if __name__ == "__main__":

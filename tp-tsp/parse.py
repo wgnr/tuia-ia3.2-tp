@@ -21,7 +21,10 @@ def parse() -> ArgumentParser:
                         help='path to input file')
     
     parser.add_argument('metodo',
-                        metavar='hill, "mismo", "reverso", "ambos"',
-                        help='path to input file')
+                        metavar='hill, "mismo", "reverso", "ambos"')
+    
+    parser.add_argument('config',
+                        metavar='config.json',
+                        help='path to config file')
 
     return parser.parse_args()
