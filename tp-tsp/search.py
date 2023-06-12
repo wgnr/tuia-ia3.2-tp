@@ -113,13 +113,15 @@ class HillClimbingReset(LocalSearch):
 class Tabu(LocalSearch):
     """Algoritmo de busqueda tabu."""
 
-    def __init__(self, use, max_len=2, prob=0.05, improv_treshold=1e-4) -> None:
+    def __init__(self, use, improv_treshold_limit, max_iter, max_len=2, prob=0.05, improv_treshold=1e-4) -> None:
         super().__init__()
         self.max_len = max_len
         self.prob = prob
         self.improv_treshold=improv_treshold
         self.reason= None
         self.use = use
+        self.improv_treshold_limit=improv_treshold_limit
+        self.max_iter=max_iter
     
     def solve(self, problem: TSP):
         if self.use=="estado":
@@ -136,11 +138,11 @@ class Tabu(LocalSearch):
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*10:
+            if no_improvements_counter > len(problem.init)*self.improv_treshold_limit:
                 self.reason="FALTA DE MEJORAS"
                 break
 
-            if self.niters > len(problem.init)*30:
+            if self.niters > len(problem.init)* self.max_iter:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 
@@ -160,7 +162,12 @@ class Tabu(LocalSearch):
 
             act, val = choice(bests_act_val)
             neightbour = Node(problem.result(actual.state, act), actual.value + val)
+            
+            if (best.value - neightbour.value)/best.value < self.improv_treshold:
+                no_improvements_counter += 1
+            
             tabu.append(neightbour.state)
+
             if best.value < neightbour.value:
                 best = neightbour
 
@@ -181,13 +188,13 @@ class Tabu(LocalSearch):
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*10:
+            if no_improvements_counter > len(problem.init)*self.improv_treshold_limit:
                 self.reason="FALTA DE MEJORAS"
                 break
 
             # No puede quedarse iterando indefinidamente, por lo que se le agrega
             # otra parada.
-            if self.niters > len(problem.init)*30:
+            if self.niters > len(problem.init)*self.max_iter:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 

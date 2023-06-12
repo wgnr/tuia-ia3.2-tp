@@ -37,6 +37,7 @@ def main() -> None:
     # cantidad_problemas=10
     # r=[p.random_reset() or list(p.init) for _ in enumerate(range(cantidad_problemas))]
     # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv("inicio.csv", index=False, sep=";")
+    # exit()
 
     # starts = pd.read_csv("inicio.csv", sep=";")
     # init_list = [(n, json.loads(arr)) for n, arr in starts.values]
@@ -69,6 +70,8 @@ def main() -> None:
                     "tabu_improv_treshold":[np.nan],
                     "tabu_lista":[np.nan],
                     "tabu_salida":[np.nan],
+                    "tabu_max_iter": [np.nan],
+                    "tabu_improv_treshold_limit": [np.nan],
                     "solution": [algo.tour],
                 })])
 
@@ -86,6 +89,8 @@ def main() -> None:
         contador=0
 
         p = problem.TSP(G)
+        improv_treshold_limit=conf_file["improv_treshold_limit"]
+        max_iter=conf_file["max_iter"]
 
         for max_len in max_len_list:
             for prob in prob_list:
@@ -93,7 +98,11 @@ def main() -> None:
                     print(f"Progreso: {contador}/{total} ({contador/total*100:.2f}%)")
                     for problem_n, init in init_list:
                         for i in range(times):
-                            algo = search.Tabu(max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo)
+                            algo = search.Tabu(
+                                max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo,
+                                improv_treshold_limit=improv_treshold_limit,
+                                max_iter=max_iter
+                                )
                             p.init = list(init)
                             algo.solve(p)
                             df = pd.concat([df,
@@ -109,6 +118,8 @@ def main() -> None:
                                                 "tabu_improv_treshold": [algo.improv_treshold],
                                                 "tabu_lista": [algo.use],
                                                 "tabu_salida": [algo.reason],
+                                                "tabu_max_iter": [max_iter],
+                                                "tabu_improv_treshold_limit": [improv_treshold_limit],
                                                 "solution": [algo.tour],
                                             })])
                         contador+=times
