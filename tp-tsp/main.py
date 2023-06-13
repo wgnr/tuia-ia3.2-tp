@@ -22,36 +22,40 @@ TABU_RESET = "tabu_r"
 ALGO_NAMES = [HILL_CLIMBING,
               HILL_CLIMBING_RANDOM_RESET, TABU_SEARCH, TABU_RESET]
 
+
 def main() -> None:
     """Funcion principal."""
-    # Parsear los argumentos de la linea de comandos
+
     args = parse.parse()
 
+    with open(args.config, "r") as f:
+        conf_file = json.load(f)
+        instance_file = conf_file["instance"]
+        init_list = conf_file["problem_list"]
+        problem_len = len(init_list[0][1])
+
     # Leer la instancia
-    G, coords = load.read_tsp(args.filename)
-    print(args.filename)
+    # create path to file tp-tsp\instances\burma14.tsp using pathlib
 
+    
+    G, coords = load.read_tsp(f'instances/{instance_file}')
+    # print(args.filename)
+
+    p = problem.TSP(G)
     metodo = args.metodo  # hill, "mismo", "reverso", "ambos"
-
-    p=problem.TSP(G)
+    
     # cantidad_problemas=10
     # r=[p.random_reset() or list(p.init) for _ in enumerate(range(cantidad_problemas))]
-    # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv("inicio.csv", index=False, sep=";")
+    # pd.DataFrame.from_dict({"problem_n":list(range(len(r))),"inicio":r}).to_csv(f"{instance_file}-inicio.csv", index=False, sep=";")
     # exit()
+    # Parsear los argumentos de la linea de comandos
+
 
     # starts = pd.read_csv("inicio.csv", sep=";")
     # init_list = [(n, json.loads(arr)) for n, arr in starts.values]
 
-    with open(args.config, "r") as f:
-        conf_file = json.load(f)
-        init_list = conf_file["runs"]
-        prob_list = conf_file["prob_list"]
-        improv_treshold_list = conf_file["improv_treshold_list"]
-        times = conf_file["times"]
-
     df = pd.DataFrame()
     if metodo == "hill":
-        p = problem.TSP(G)
         for problem_n, init in init_list:
             p.init = list(init)
             algo = search.HillClimbing()
@@ -59,73 +63,82 @@ def main() -> None:
             df = pd.concat([
                 df,
                 pd.DataFrame.from_dict({
-                    "name": [algo.__class__.__name__],
+                    "algorithm": [algo.__class__.__name__],
+                    "instance": [instance_file],
+                    "instance_points": [problem_len],
+                    "instance_problem": [problem_n],
                     "value": [algo.value],
-                    "niters": [algo.niters],
+                    "iters": [algo.niters],
                     "time": [algo.time],
-                    "problem_n": [problem_n],
-                    "tabu_iter":[np.nan],
-                    "tabu_max_len":[np.nan],
-                    "tabu_prob":[np.nan],
-                    "tabu_improv_treshold":[np.nan],
-                    "tabu_lista":[np.nan],
-                    "tabu_salida":[np.nan],
-                    "tabu_max_iter": [np.nan],
-                    "tabu_improv_treshold_limit": [np.nan],
                     "solution": [algo.tour],
+                    "tabu_list_method": [np.nan],
+                    "tabu_list_len": [np.nan],
+                    "tabu_run": [np.nan],
+                    "tabu_chance_prob": [np.nan],
+                    "tabu_improv_treshold": [np.nan],
+                    "tabu_improv_stop_mult": [np.nan],
+                    "tabu_iter_stop_mult": [np.nan],
+                    "tabu_exit": [np.nan],
                 })])
 
     elif metodo in ["mismo", "reverso", "ambos", "estado"]:
-        max_len_list=[np.nan]
-        if metodo!="estado":
-            problem_len=len(init_list[0][1])
-            print(problem_len)
-            max_len_list = set(conf_file["len_list"]["fixed"]+
-                               [int(problem_len//n) for n in conf_file["len_list"]["proporcional_div"]])
+        max_len_list = [np.nan]
+        if metodo != "estado":
+            max_len_list = set(conf_file["tabu"]["len_list"]["fixed"] +
+                               [int(problem_len*n) for n in conf_file["tabu"]["len_list"]["proporcional"]])
             print(max_len_list)
-        
-        total=len(max_len_list)*len(prob_list)*len(improv_treshold_list)*len(init_list)*times
-        print("Cantidad total de iteraciones", total)
-        contador=0
 
-        p = problem.TSP(G)
-        improv_treshold_limit=conf_file["improv_treshold_limit"]
-        max_iter=conf_file["max_iter"]
+        chance_prob_list = conf_file["tabu"]["chance_prob_list"]
+        improv_treshold_list = conf_file["tabu"]["improv_treshold_list"]
+        improv_treshold_proportional = conf_file["tabu"]["improv_treshold_proportional"]
+        max_iter = conf_file["tabu"]["max_iter"]
+        runs = conf_file["tabu"]["runs"]
+
+        total = len(max_len_list)*len(chance_prob_list) * \
+            len(improv_treshold_list)*len(init_list)*runs
+        print("Cantidad total de iteraciones", total)
+        contador = 0
 
         for max_len in max_len_list:
-            for prob in prob_list:
+            for chance_prob in chance_prob_list:
                 for improv_treshold in improv_treshold_list:
-                    print(f"Progreso: {contador}/{total} ({contador/total*100:.2f}%)")
+                    print(
+                        f"Progreso: {contador}/{total} ({contador/total*100:.2f}%)")
                     for problem_n, init in init_list:
-                        for i in range(times):
+                        for i in range(runs):
                             algo = search.Tabu(
-                                max_len=max_len, prob=prob, improv_treshold=improv_treshold, use=metodo,
-                                improv_treshold_limit=improv_treshold_limit,
+                                max_len=max_len,
+                                prob=chance_prob,
+                                improv_treshold=improv_treshold,
+                                list_method=metodo,
+                                improv_treshold_limit=improv_treshold_proportional,
                                 max_iter=max_iter
-                                )
+                            )
                             p.init = list(init)
                             algo.solve(p)
                             df = pd.concat([df,
                                             pd.DataFrame.from_dict({
-                                                "name": [algo.__class__.__name__],
+                                                "algorithm": [algo.__class__.__name__],
+                                                "instance": [instance_file],
+                                                "instance_points": [problem_len],
+                                                "instance_problem": [problem_n],
                                                 "value": [algo.value],
-                                                "niters": [algo.niters],
+                                                "iters": [algo.niters],
                                                 "time": [algo.time],
-                                                "problem_n": [problem_n],
-                                                "tabu_iter": [i],
-                                                "tabu_max_len":  [algo.max_len],
-                                                "tabu_prob": [algo.prob],
-                                                "tabu_improv_treshold": [algo.improv_treshold],
-                                                "tabu_lista": [algo.use],
-                                                "tabu_salida": [algo.reason],
-                                                "tabu_max_iter": [max_iter],
-                                                "tabu_improv_treshold_limit": [improv_treshold_limit],
                                                 "solution": [algo.tour],
+                                                "tabu_list_method": [algo.tabu_list_method],
+                                                "tabu_list_len":  [algo.tabu_list_len],
+                                                "tabu_run": [i],
+                                                "tabu_chance_prob": [algo.tabu_chance_prob],
+                                                "tabu_improv_treshold": [algo.tabu_improv_treshold],
+                                                "tabu_improv_stop_mult": [algo.improv_treshold_stop_mult],
+                                                "tabu_iter_stop_mult": [algo.tabu_iter_stop_mult],
+                                                "tabu_exit": [algo.reason],
                                             })])
-                        contador+=times
-    
+                        contador += runs
+
     df.reset_index(drop=True, inplace=True)
-    df.to_pickle(f"{metodo}-{args.config}.pkl")
+    df.to_pickle(f"{args.config}-{metodo}.pkl")
 
 
 if __name__ == "__main__":

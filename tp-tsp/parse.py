@@ -16,9 +16,9 @@ def parse() -> ArgumentParser:
     )
 
     # Agregamos los argumentos posicionales
-    parser.add_argument('filename',
-                        metavar='filename.tsp',
-                        help='path to input file')
+    # parser.add_argument('filename',
+    #                     metavar='filename.tsp',
+    #                     help='path to input file')
     
     parser.add_argument('metodo',
                         metavar='hill, "mismo", "reverso", "ambos"')

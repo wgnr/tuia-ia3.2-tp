@@ -113,18 +113,22 @@ class HillClimbingReset(LocalSearch):
 class Tabu(LocalSearch):
     """Algoritmo de busqueda tabu."""
 
-    def __init__(self, use, improv_treshold_limit, max_iter, max_len=2, prob=0.05, improv_treshold=1e-4) -> None:
+    def __init__(self, list_method, improv_treshold_limit, max_iter, max_len=2, prob=0.05, improv_treshold=1e-4) -> None:
         super().__init__()
-        self.max_len = max_len
-        self.prob = prob
-        self.improv_treshold=improv_treshold
+        self.tabu_list_len = max_len
+        self.tabu_chance_prob = prob
+        self.tabu_improv_treshold=improv_treshold
         self.reason= None
-        self.use = use
-        self.improv_treshold_limit=improv_treshold_limit
-        self.max_iter=max_iter
+        self.tabu_list_method = list_method
+        self.improv_treshold_stop_mult=improv_treshold_limit
+        self.tabu_improv_counter_stop=0
+        self.tabu_iter_stop_mult=max_iter
+        self.tabu_iter_stop=0
     
     def solve(self, problem: TSP):
-        if self.use=="estado":
+        self.tabu_improv_counter_stop=len(problem.init)*self.improv_treshold_stop_mult
+        self.tabu_iter_stop=len(problem.init)* self.tabu_iter_stop_mult
+        if self.tabu_list_method=="estado":
             self.solve_state_(problem)
         else:
             self.solve_act_(problem)
@@ -138,11 +142,11 @@ class Tabu(LocalSearch):
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*self.improv_treshold_limit:
+            if no_improvements_counter > self.tabu_improv_counter_stop:
                 self.reason="FALTA DE MEJORAS"
                 break
 
-            if self.niters > len(problem.init)* self.max_iter:
+            if self.niters > self.tabu_iter_stop:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 
@@ -154,7 +158,7 @@ class Tabu(LocalSearch):
             
             max_val = max(diff.values())
             bests_act_val = [(act, val) for act, val in diff.items()
-                             if abs(max_val - val) <= self.prob*abs(max_val)]
+                             if abs(max_val - val) <= self.tabu_chance_prob*abs(max_val)]
             
             if not bests_act_val:
                 self.reason="AGOTAMIENTO DE ACCIONES"
@@ -163,7 +167,7 @@ class Tabu(LocalSearch):
             act, val = choice(bests_act_val)
             neightbour = Node(problem.result(actual.state, act), actual.value + val)
             
-            if (best.value - neightbour.value)/best.value < self.improv_treshold:
+            if (best.value - neightbour.value)/best.value < self.tabu_improv_treshold:
                 no_improvements_counter += 1
             
             tabu.append(neightbour.state)
@@ -184,17 +188,17 @@ class Tabu(LocalSearch):
 
         actual = Node(problem.init, problem.obj_val(problem.init))
         best = actual
-        tabu = deque(maxlen=self.max_len)
+        tabu = deque(maxlen=self.tabu_list_len)
         no_improvements_counter = 0
 
         while True:
-            if no_improvements_counter > len(problem.init)*self.improv_treshold_limit:
+            if no_improvements_counter > self.tabu_improv_counter_stop:
                 self.reason="FALTA DE MEJORAS"
                 break
 
             # No puede quedarse iterando indefinidamente, por lo que se le agrega
             # otra parada.
-            if self.niters > len(problem.init)*self.max_iter:
+            if self.niters > self.tabu_iter_stop:
                 self.reason="EXCESO DE ITERACIONES"
                 break
 
@@ -212,7 +216,7 @@ class Tabu(LocalSearch):
             # espacio de estados potencial a explorar, permitiendo recorrer más
             # caminos subóptimos (simil, Gradiente Estocástico)
             bests_act_val = [(act, val) for act, val in diff.items()
-                             if abs(max_val - val) <= self.prob*abs(max_val)]
+                             if abs(max_val - val) <= self.tabu_chance_prob*abs(max_val)]
 
             # de no haber acciones disponibles, sale.
             # generalmente ocacionado por la cantidad de restricciones en la lista tabu.
@@ -224,7 +228,7 @@ class Tabu(LocalSearch):
             act, val = choice(bests_act_val)
             neightbour = Node(problem.result(actual.state, act), actual.value + val)
 
-            if (best.value - neightbour.value)/best.value < self.improv_treshold:
+            if (best.value - neightbour.value)/best.value < self.tabu_improv_treshold:
                 no_improvements_counter += 1
 
             # si el score del estado es mejor, reemplazamos el mejor por el vecino.
@@ -232,11 +236,11 @@ class Tabu(LocalSearch):
                 best = neightbour
 
             # insertamos la accion contraria
-            if self.use == "mismo":
+            if self.tabu_list_method == "mismo":
                 tabu.append(act)
-            elif self.use == "reverso":
+            elif self.tabu_list_method == "reverso":
                 tabu.append(act[::-1])
-            elif self.use == "ambos":
+            elif self.tabu_list_method == "ambos":
                 tabu.append(act)
                 tabu.append(act[::-1])
             else:
